@@ -2,24 +2,41 @@ from time import sleep
 import cv2
 from cv2 import aruco
 import numpy as np
-from camera_calibration import load_coefficients
+
+"""
+Press 'c' to take a picture and save it to images/virtual_objects.jpg.
+"""
 
 ARUCO_SIZE = 5.5
 
 virtual_objects = [
-    cv2.imread('./images/a_dramatic_turn_of_events.jpg'),
-    cv2.imread('./images/distant_satellites.jpg'),
-    cv2.imread('./images/in_absentia.jpg'),
-    cv2.imread('./images/octavarium.jpg'),
-    cv2.imread('./images/panther.jpg'),
-    cv2.imread('./images/remedy_lane.jpg'),
-    cv2.imread('./images/the_perfect_element.jpg'),
-    cv2.imread('./images/the_raven_that_refused_to_sing_and_other_stories.jpg'),
-    cv2.imread('./images/the_optimist.jpg'),
-    cv2.imread('./images/the_similitude_of_a_dream.jpg'),
-    cv2.imread('./images/weather_systems.jpg'),
-    cv2.imread('./images/whirlwind.jpg'),
+    cv2.imread('./images/album_covers/a_dramatic_turn_of_events.jpg'),
+    cv2.imread('./images/album_covers/distant_satellites.jpg'),
+    cv2.imread('./images/album_covers/in_absentia.jpg'),
+    cv2.imread('./images/album_covers/octavarium.jpg'),
+    cv2.imread('./images/album_covers/panther.jpg'),
+    cv2.imread('./images/album_covers/remedy_lane.jpg'),
+    cv2.imread('./images/album_covers/the_perfect_element.jpg'),
+    cv2.imread('./images/album_covers/the_raven_that_refused_to_sing_and_other_stories.jpg'),
+    cv2.imread('./images/album_covers/the_optimist.jpg'),
+    cv2.imread('./images/album_covers/the_similitude_of_a_dream.jpg'),
+    cv2.imread('./images/album_covers/weather_systems.jpg'),
+    cv2.imread('./images/album_covers/whirlwind.jpg'),
 ]
+
+
+def load_coefficients(path):
+    '''Load camera matrix and distortion coefficients from given [path].'''
+    # FILE_STORAGE_READ
+    cv_file = cv2.FileStorage(path, cv2.FILE_STORAGE_READ)
+
+    # note we also have to specify the type to retrieve other wise we only get a
+    # FileNode object back instead of a matrix
+    camera_matrix = cv_file.getNode('K').mat()
+    dist_matrix = cv_file.getNode('D').mat()
+
+    cv_file.release()
+    return [camera_matrix, dist_matrix]
 
 def main():
     cap = cv2.VideoCapture(0)
@@ -47,18 +64,10 @@ def main():
             gray, aruco_dict, parameters=parameters)
 
         frame_markers = frame.copy()
-        print(ids)
         if ids is not None and len(corners) != 0:
             rvecs, tvecs, _objPoints = aruco.estimatePoseSingleMarkers(
                 corners, ARUCO_SIZE, cameraMatrix, distCoeffs)
-
-            #frame_markers = aruco.drawDetectedMarkers(
-            #    frame_markers, corners, ids)
-
-            #for i in range(len(rvecs)):
-                #rvec = rvecs[i]
-                #tvec = tvecs[i]
-                #frame_markers = cv2.drawFrameAxes(frame_markers, cameraMatrix, distCoeffs, rvec, tvec, ARUCO_SIZE/2)
+                
             for i in range(len(corners)):
                 bbox = corners[i]
                 tl = bbox[0][0][0], bbox[0][0][1]
@@ -76,6 +85,9 @@ def main():
                 cv2.fillConvexPoly(frame_markers, pts1.astype(int), (0, 0, 0))
                 frame_markers = frame_markers + imgOut
 
+        if cv2.waitKey(1) == ord('c'):     
+            cv2.imwrite('images/virtual_objects.jpg', frame_markers)
+            print('Saved axis.jpg')
 
         # Display the resulting frame
         cv2.imshow('frame', frame_markers)
